@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alias Keybind Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    textarea, input {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+    }
+    pre {
+      background: #222;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Alias Keybind Generator</h2>
+
+    <label>Messages (one per line):</label>
+    <textarea id="messages" rows="6" placeholder="Hello World!
+Greetings World!
+Good Morning World!"></textarea>
+
+    <label>Key to bind:</label>
+    <input id="bindKey" placeholder="." />
+
+    <label>Base alias name:</label>
+    <input id="baseAlias" placeholder="messages" />
+
+    <button onclick="generate()">Generate Commands</button>
+
+    <h3>Output:</h3>
+    <pre id="output"></pre>
+  </div>
+
+  <script>
+    function generate() {
+              const msgs = document.getElementById('messages').value.split(/\n+/).filter(x => x.trim().length > 0);
+              const key = document.getElementById('bindKey').value.trim();
+              const base = document.getElementById('baseAlias').value.trim();
+
+              if (!msgs.length || !key || !base) {
+                document.getElementById('output').textContent = "Please fill all fields.";
+                return;
+              }
+
+              let out = '';
+
+
+              // +/- aliases like example
+              out += `alias "-${base}" "${base}_0"\n`;
+              out += `alias "+${base}" "${base}_0"\n`;
+
+
+              // First redirect
+              out += `alias "${base}_0" "${base}_1"\n`;
+
+
+              msgs.forEach((msg, i) => {
+              const index = i + 1;
+              const nextIndex = i + 2;
+              const isLast = i === msgs.length - 1;
+
+
+              if (!isLast) {
+                  out += `alias "${base}_${index}" "say ${msg}; alias ${base}_0 ${base}_${nextIndex}"\n`;
+              } else {
+                  // loop
+                  out += `alias "${base}_${index}" "say ${msg}; alias ${base}_0 ${base}_1"\n`;
+              }
+      });
+
+
+      out += `bind "${key}" "+${base}"`;
+
+      document.getElementById('output').textContent = out;
+    }
+  </script>
+</body>
+</html>
