@@ -62,8 +62,11 @@ Good Morning World!"></textarea>
 
     <button onclick="generate()">Generate Commands</button>
 
-    <h3>Output:</h3>
+    <h3>Multi Line Output (Autoexec):</h3>
     <pre id="output"></pre>
+
+    <h3>One Line Output (Console):</h3>
+    <pre id="outputOneLine"></pre>
   </div>
 
   <script>
@@ -107,6 +110,8 @@ Good Morning World!"></textarea>
       out += `bind "${key}" "+${base}"`;
 
       document.getElementById('output').textContent = out;
+      out = out.replaceAll("\n", "; ");
+      document.getElementById('outputOneLine').textContent = out;
     }
   </script>
 </body>
