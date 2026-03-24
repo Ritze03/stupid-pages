@@ -1,3 +1,5 @@
 # Stupid fun pages
 
-## [Alias Keybind Generator](https://ritze03.github.io/stupid-pages/cs2-chat-keybind-generator.html)
+## CS2:
+### [Multimap Generator](https://ritze03.github.io/stupid-pages/cs2-multimap-generator.html)
+### [Chat Keybind Generator](https://ritze03.github.io/stupid-pages/cs2-chat-keybind-generator.html)
