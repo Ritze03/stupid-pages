@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2 MultiMap Editor</title>
+    <style>
+        :root {
+            --bg-body: #0a0b0f;
+            --bg-nav: #12141a;
+            --bg-card: #181b21;
+            --bg-card-hover: #1e2129;
+            --bg-input: #232731;
+            --border: #2c313c;
+            --border-hover: #3f4654;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --danger: #ef4444;
+            --danger-hover: #f87171;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Nav Bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            background-color: var(--bg-nav);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            gap: 24px;
+        }
+
+        .top-bar-spacer {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .controls-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select,
+        input[type="text"] {
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+            font-family: monospace;
+        }
+
+        select:focus,
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        button.btn {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button.btn:hover:not(:disabled) {
+            background-color: var(--border);
+            border-color: var(--border-hover);
+        }
+
+        button.btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        button.btn.primary {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        button.btn.primary:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        button.btn-add-map {
+            background-color: transparent;
+            border: 1px dashed var(--accent);
+            color: var(--accent);
+        }
+
+        button.btn-add-map:hover:not(:disabled) {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-style: solid;
+        }
+
+        /* Map Columns Layout */
+        .editor-area {
+            display: flex;
+            padding: 24px;
+            gap: 24px;
+            overflow-x: auto;
+            overflow-y: auto;
+            flex: 1;
+            align-items: flex-start;
+        }
+
+        /* Modern Scrollbar */
+        .editor-area::-webkit-scrollbar {
+            height: 10px;
+            width: 10px;
+        }
+
+        .editor-area::-webkit-scrollbar-track {
+            background: var(--bg-body);
+        }
+
+        .editor-area::-webkit-scrollbar-thumb {
+            background-color: var(--border-hover);
+            border-radius: 5px;
+        }
+
+        .map-col {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 440px;
+            min-width: 440px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background-color: var(--bg-card);
+            border-radius: 12px 12px 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 6;
+        }
+
+        .map-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .map-id-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .map-id-input-group .dot {
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        input.map-id-input {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-main);
+            font-weight: bold;
+            font-family: monospace;
+            background: transparent;
+            border: 1px dashed transparent;
+            padding: 4px 8px;
+            width: 140px;
+            transition: border 0.2s;
+        }
+
+        input.map-id-input:hover {
+            border-color: var(--border);
+            background: var(--bg-input);
+        }
+
+        input.map-id-input:focus {
+            border-style: solid;
+        }
+
+        .reorder-btns {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .reorder-btns button {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 6px;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .reorder-btns button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .reorder-btns button:hover:not(:disabled) {
+            background: var(--border);
+            color: var(--text-main);
+            border-color: var(--border-hover);
+        }
+
+        .reorder-btns button:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        .reorder-btns .del-map-btn {
+            color: var(--danger);
+            font-size: 18px;
+            padding-bottom: 3px;
+        }
+
+        .reorder-btns .del-map-btn:hover:not(:disabled) {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-hover);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group .status-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-row input {
+            flex: 1;
+            background: var(--bg-body);
+        }
+
+        .status-row button {
+            flex-shrink: 0;
+            padding: 0 12px;
+        }
+
+        .keybinds-list {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .key-card {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+
+        .key-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .key-card-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .key-fields-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .key-name-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .key-card-header label {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .key-card-header input {
+            font-weight: bold;
+            color: var(--accent);
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            width: 60px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        input.alias-input.invalid {
+            color: var(--danger) !important;
+            border-color: var(--danger) !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        .action-btn.delete-btn:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .action-btn.clone-btn:hover {
+            color: var(--accent);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .cloning-active-badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            pointer-events: none;
+        }
+
+        .key-action-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .action-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-row>label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            width: 65px;
+            flex-shrink: 0;
+            text-transform: capitalize;
+        }
+
+        .action-row input[type="text"],
+        .action-row select {
+            flex: 1;
+            background: var(--bg-body);
+            min-width: 0;
+        }
+
+        /* CUSTOM CHECKBOX */
+        .custom-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            user-select: none;
+            position: relative;
+            padding-left: 26px;
+        }
+
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .custom-checkbox .checkmark {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 16px;
+            width: 16px;
+            background-color: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .custom-checkbox input:checked~.checkmark {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .custom-checkbox .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 5px;
+            top: 2px;
+            width: 3px;
+            height: 7px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .custom-checkbox input:checked~.checkmark:after {
+            display: block;
+        }
+
+        .add-key-btn {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 2px dashed var(--border);
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .add-key-btn:hover {
+            border-color: var(--text-muted);
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .add-key-btn.cloning-target {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(59, 130, 246, 0.1);
+            border-style: solid;
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+
+        dialog.modal {
+            background: transparent;
+            border: none;
+            padding: 0;
+            outline: none;
+        }
+
+        dialog.modal::backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-nav);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            width: 440px;
+            max-width: 95vw;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            font-family: 'Inter', system-ui, sans-serif;
+            box-sizing: border-box;
+        }
+
+        .modal-content h3 {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+            color: var(--accent);
+        }
+
+        .builder-group {
+            margin-bottom: 20px;
+            background: var(--bg-input);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .preview-container {
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            height: 450px;
+            overflow: auto;
+            margin-bottom: 20px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre;
+            border-left: 4px solid var(--accent);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .syntax-keyword {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .syntax-string {
+            color: var(--danger-hover);
+        }
+
+        .syntax-comment {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .copy-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .copy-toast.visible {
+            transform: translateY(0);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .instruction-box {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .instruction-box code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .instruction-box strong {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <div class="controls-group">
+            <label>Layout Name</label>
+            <input type="text" id="layoutNameInput" value="layout" style="width: 120px;"
+                oninput="state.layout_name = this.value.trim() || 'layout'">
+        </div>
+        <div class="controls-group">
+            <label>Switch Key</label>
+            <input type="text" id="cycleKeyInput" value="=" style="width: 80px; text-align: center;"
+                oninput="state.switch_key = this.value.trim() || '='">
+        </div>
+        <div class="controls-group">
+            <label>Mode</label>
+            <select id="switchModeSel" onchange="setSwitchingMode(this.value)">
+                <option value="cycle">cycle</option>
+                <option value="hold">hold</option>
+            </select>
+        </div>
+        <div class="top-bar-spacer">
+            <button class="btn btn-add-map" id="addMapBtn" onclick="increaseMaps()">+ Add Map</button>
+        </div>
+        <div class="controls-group">
+            <button class="btn" onclick="document.getElementById('fileInput').click()">Import JSON</button>
+            <input type="file" id="fileInput" accept=".json" onchange="importJSON(event)" style="display: none;">
+            <button class="btn" onclick="exportJSON()">Export JSON</button>
+            <button class="btn primary" onclick="openExportModal()">Export CS2</button>
+            <button class="btn" onclick="newConfig()"
+                style="background: var(--danger); border-color: var(--danger); color: white;">New</button>
+        </div>
+    </div>
+    <div class="editor-area" id="editor-area"></div>
+
+    <dialog id="statusBuilderModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 24px;">Presets</h3>
+            <div class="builder-group">
+                <label class="custom-checkbox group-toggle">
+                    <input type="checkbox" id="tgl_xhair_c"
+                        onchange="document.getElementById('grp_xhair_c').style.display = this.checked ? 'block' : 'none'">
+                    <span class="checkmark"></span> Crosshair Color (Simple)
+                </label>
+                <div id="grp_xhair_c" style="display: none; margin-top: 12px; padding-left: 26px;">
+                    <select id="sb_xhair_c" class="map-id-input" style="width: 100%; margin-bottom: 8px;">
+                        <option value="0">Red (0)</option>
+                        <option value="1" selected>Green (1)</option>
+                        <option value="2">Yellow (2)</option>
+                        <option value="3">Blue (3)</option>
+                        <option value="4">Light Blue (4)</option>
+                    </select>
+                    <div style="margin-top:8px">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="sb_xhair_alpha_fix">
+                            <span class="checkmark"></span> Remove Transparency (Alpha 255)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-group">
+                <label class="custom-checkbox group-toggle">
+                    <input type="checkbox" id="tgl_rgba"
+                        onchange="document.getElementById('grp_rgba').style.display = this.checked ? 'block' : 'none'">
+                    <span class="checkmark"></span> Crosshair RGBA (Custom)
+                </label>
+                <div id="grp_rgba" style="display: none; margin-top: 12px; padding-left: 26px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size:12px; color:var(--text-muted)">Preview</span>
+                        <div id="sb_preview"
+                            style="width: 40px; height: 20px; border: 1px solid var(--border); border-radius: 4px; background: #fff;">
+                        </div>
+                    </div>
+                    <div class="sliders" style="display:flex; flex-direction:column; gap:8px">
+                        <div style="display:flex; align-items:center; gap:8px">R <input type="range" id="sb_r" min="0"
+                                max="255" value="255" oninput="updatePreview()" style="flex:1"><span id="val_r"
+                                style="width:30px; text-align:right">255</span></div>
+                        <div style="display:flex; align-items:center; gap:8px">G <input type="range" id="sb_g" min="0"
+                                max="255" value="255" oninput="updatePreview()" style="flex:1"><span id="val_g"
+                                style="width:30px; text-align:right">255</span></div>
+                        <div style="display:flex; align-items:center; gap:8px">B <input type="range" id="sb_b" min="0"
+                                max="255" value="255" oninput="updatePreview()" style="flex:1"><span id="val_b"
+                                style="width:30px; text-align:right">255</span></div>
+                        <div style="display:flex; align-items:center; gap:8px">A <input type="range" id="sb_a" min="0"
+                                max="255" value="255" oninput="updatePreview()" style="flex:1"><span id="val_a"
+                                style="width:30px; text-align:right">255</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-group">
+                <label class="custom-checkbox group-toggle">
+                    <input type="checkbox" id="tgl_outline"
+                        onchange="document.getElementById('grp_outline').style.display = this.checked ? 'block' : 'none'">
+                    <span class="checkmark"></span> Crosshair Outline
+                </label>
+                <div id="grp_outline" style="display: none; margin-top: 12px; padding-left: 26px;">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="sb_outline">
+                        <span class="checkmark"></span> Enabled
+                    </label>
+                </div>
+            </div>
+
+            <div class="builder-group">
+                <label class="custom-checkbox group-toggle">
+                    <input type="checkbox" id="tgl_hud"
+                        onchange="document.getElementById('grp_hud').style.display = this.checked ? 'block' : 'none'">
+                    <span class="checkmark"></span> HUD Color
+                </label>
+                <div id="grp_hud" style="display: none; margin-top: 12px; padding-left: 26px;">
+                    <select id="sb_hud" class="map-id-input" style="width: 100%;">
+                        <option value="0">Team Color (0)</option>
+                        <option value="1">White (1)</option>
+                        <option value="2">Bright White (2)</option>
+                        <option value="3">Light Blue (3)</option>
+                        <option value="4" selected>Default Blue (4)</option>
+                        <option value="5">Purple (5)</option>
+                        <option value="6">Red (6)</option>
+                        <option value="7">Orange (7)</option>
+                        <option value="8">Yellow (8)</option>
+                        <option value="9">Green (9)</option>
+                        <option value="10">Aqua (10)</option>
+                        <option value="11">Pink (11)</option>
+                        <option value="12">Teammate Color (12)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="builder-actions" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn" onclick="document.getElementById('statusBuilderModal').close()">Cancel</button>
+                <button class="btn" onclick="applyStatusBuilder(false)">Insert</button>
+                <button class="btn primary" onclick="applyStatusBuilder(true)">Replace</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="saveReminderModal" class="modal">
+        <div class="modal-content">
+            <h3>Save JSON Backup?</h3>
+            <p style="margin-bottom: 24px; line-height: 1.5; color: var(--text-muted);">To keep your project editable
+                later, it's highly recommended to export a JSON file before generating the CS2 config.</p>
+            <div class="modal-footer">
+                <button class="btn" onclick="proceedToExport(false)">Skip & Export</button>
+                <button class="btn primary" onclick="proceedToExport(true)">Save JSON & Export</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="exportModal" class="modal" style="width: 1000px; max-width: 95vw; overflow-x: hidden;">
+        <div class="modal-content" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin:0">CS2 MultiMap Configuration</h3>
+                <button class="btn primary" onclick="copyToClipboard()">Copy to Clipboard</button>
+            </div>
+
+            <div id="dlMsg" class="instruction-box" style="display: none;">
+                Generated <strong>multimap.cfg</strong>. Put <code>exec multimap.cfg</code> in your
+                <code>autoexec.cfg</code>.
+            </div>
+
+            <div class="preview-container" id="exportPreview"></div>
+
+            <div class="modal-footer">
+                <button class="btn" onclick="document.getElementById('exportModal').close()">Close</button>
+                <button class="btn primary" onclick="downloadCS2File()">Download multimap.cfg</button>
+            </div>
+        </div>
+    </dialog>
+    <div id="toast" class="copy-toast">Copied!</div>
+
+    <script>
+        let state = { layout_name: "layout", switching_mode: "cycle", switch_key: "=", maps: [{ id: "map0", status: "", status_release: "", keys: {} }] };
+        let cloningSource = null;
+
+        function newConfig() {
+            state = { layout_name: "layout", switching_mode: "cycle", switch_key: "=", maps: [{ id: "map0", status: "", status_release: "", keys: {} }] };
+            document.getElementById('cycleKeyInput').value = "=";
+            document.getElementById('layoutNameInput').value = "layout";
+            renderAll();
+        }
+        function importJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (imported.switching_mode && imported.maps) {
+                        imported.maps.forEach(m => { for (let k in m.keys) if (!m.keys[k].alias) m.keys[k].alias = k; });
+                        state = imported;
+                        document.getElementById('cycleKeyInput').value = state.switch_key || "=";
+                        document.getElementById('layoutNameInput').value = state.layout_name || "layout";
+                        renderAll();
+                    }
+                } catch (err) { alert('Parse error'); }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+        function exportJSON() {
+            let cloned = JSON.parse(JSON.stringify(state));
+            cloned.maps.forEach(m => Object.values(m.keys).forEach(k => delete k._showAdvanced));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cloned, null, 2));
+            const a = document.createElement('a'); a.href = dataStr; a.download = "multimap.json"; a.click();
+        }
+        function openExportModal() { document.getElementById('saveReminderModal').showModal(); }
+        function proceedToExport(saveJson) {
+            document.getElementById('saveReminderModal').close();
+            if (saveJson) exportJSON();
+            const cs2Text = generateCS2();
+            document.getElementById('exportPreview').innerHTML = highlightCS2(cs2Text);
+            document.getElementById('dlMsg').style.display = 'none';
+            document.getElementById('exportModal').showModal();
+        }
+        function highlightCS2(text) {
+            return text.split('\n').map(line => {
+                let l = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                if (l.trim().startsWith('//')) return `<span class="syntax-comment">${l}</span>`;
+
+                const strings = [];
+                l = l.replace(/"([^"]*)"/g, (match) => {
+                    const id = `__STR_${strings.length}__`;
+                    strings.push(`<span class="syntax-string">${match}</span>`);
+                    return id;
+                });
+
+                l = l.replace(/\b(bind|alias)\b/g, '<span class="syntax-keyword">$1</span>');
+
+                strings.forEach((s, idx) => {
+                    l = l.replace(`__STR_${idx}__`, s);
+                });
+
+                return l;
+            }).join('\n');
+        }
+        function copyToClipboard() {
+            navigator.clipboard.writeText(generateCS2()).then(() => {
+                const toast = document.getElementById('toast'); toast.classList.add('visible');
+                setTimeout(() => toast.classList.remove('visible'), 2000);
+            });
+        }
+        function downloadCS2File() {
+            const a = document.createElement('a'); a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(generateCS2());
+            a.download = "multimap.cfg"; a.click(); document.getElementById('dlMsg').style.display = 'block';
+        }
+        function setSwitchingMode(mode) {
+            state.switching_mode = mode;
+            if (mode === 'hold' && state.maps.length > 2) state.maps = state.maps.slice(0, 2);
+            renderAll();
+        }
+        function increaseMaps() {
+            if (state.switching_mode === 'hold' && state.maps.length >= 2) return;
+            let id = `map${state.maps.length}`;
+            while (state.maps.some(m => m.id === id)) id += "_new";
+            state.maps.push({ id, status: "", status_release: "", keys: {} });
+            renderAll();
+        }
+        function removeMap(idx) { if (state.maps.length > 1) { state.maps.splice(idx, 1); renderAll(); } }
+        function moveMap(idx, dir) {
+            if (idx + dir >= 0 && idx + dir < state.maps.length) { [state.maps[idx], state.maps[idx + dir]] = [state.maps[idx + dir], state.maps[idx]]; renderAll(); }
+        }
+        function updateMapID(idx, newId) {
+            newId = newId.trim(); if (!newId) return renderAll();
+            let oldId = state.maps[idx].id;
+            if (oldId === newId) return;
+            if (state.maps.some((m, i) => i !== idx && m.id === newId)) return alert("ID exists");
+            state.maps[idx].id = newId;
+            state.maps.forEach(m => Object.values(m.keys).forEach(c => {
+                if (c.press_switch_to_map === oldId) c.press_switch_to_map = newId;
+                if (c.release_switch_to_map === oldId) c.release_switch_to_map = newId;
+            }));
+            renderAll();
+        }
+        function addKey(idx) {
+            if (cloningSource) {
+                const src = state.maps[cloningSource.idx].keys[cloningSource.key];
+                let k = cloningSource.key;
+                if (state.maps[idx].keys[k]) { let i = 1; while (state.maps[idx].keys[k + '_' + i]) i++; k += '_' + i; }
+                state.maps[idx].keys[k] = JSON.parse(JSON.stringify(src));
+                cloningSource = null; renderAll(); return;
+            }
+            let k = "new_bind", i = 1; while (state.maps[idx].keys[k]) { k = "new_bind_" + i; i++; }
+            state.maps[idx].keys[k] = { alias: k, press: "", release: "", press_switch_to_map: "", release_switch_to_map: "" };
+            renderAll();
+        }
+        function removeKey(idx, k) { delete state.maps[idx].keys[k]; renderAll(); }
+        function updateKeyName(idx, old, val) {
+            val = val.trim().toLowerCase(); if (!val || val === old) return;
+            state.maps.forEach(m => {
+                if (m.keys[old]) {
+                    const cfg = m.keys[old]; if (cfg.alias === old) cfg.alias = val;
+                    const next = {}; for (let k in m.keys) next[k === old ? val : k] = m.keys[k];
+                    m.keys = next;
+                }
+            });
+            renderAll();
+        }
+        function updateAliasName(idx, k, val) {
+            val = val.trim().toLowerCase();
+            state.maps.forEach(m => { if (m.keys[k]) m.keys[k].alias = val; });
+            renderAll();
+        }
+        function startClone(idx, k) { cloningSource = { idx, key: k }; renderAll(); }
+        function toggleAdvanced(idx, k, val) {
+            state.maps[idx].keys[k]._showAdvanced = val;
+            if (!val) {
+                state.maps[idx].keys[k].press_switch_to_map = "";
+                state.maps[idx].keys[k].release_switch_to_map = "";
+            }
+            renderAll();
+        }
+        function getMapOps(sel) {
+            let h = `<option value="">-- none --</option>`;
+            state.maps.forEach(m => h += `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.id}</option>`);
+            return h;
+        }
+        function updatePreview() {
+            let r = sb_r.value, g = sb_g.value, b = sb_b.value, a = sb_a.value;
+            val_r.innerText = r; val_g.innerText = g; val_b.innerText = b; val_a.innerText = a;
+            sb_preview.style.background = `rgba(${r},${g},${b},${a / 255})`;
+        }
+        function applyStatusBuilder(replace) {
+            if (currentStatusMapIndex === -1) return;
+            let cmds = [];
+            if (tgl_xhair_c.checked) {
+                cmds.push(`cl_crosshaircolor ${sb_xhair_c.value}`);
+                if (sb_xhair_alpha_fix.checked) cmds.push(`cl_crosshairalpha 255`);
+            }
+            if (tgl_rgba.checked) {
+                cmds.push(`cl_crosshaircolor_r ${sb_r.value}`, `cl_crosshaircolor_g ${sb_g.value}`, `cl_crosshaircolor_b ${sb_b.value}`, `cl_crosshairalpha ${sb_a.value}`);
+            }
+            if (tgl_outline.checked) {
+                cmds.push(`cl_crosshair_drawoutline ${sb_outline.checked ? 1 : 0}`);
+            }
+            if (tgl_hud.checked) {
+                cmds.push(`cl_hud_color ${sb_hud.value}`);
+            }
+            if (cmds.length) {
+                let build = cmds.join("; ");
+                if (replace) {
+                    state.maps[currentStatusMapIndex].status = build;
+                } else {
+                    let cur = state.maps[currentStatusMapIndex].status.trim();
+                    if (cur && !cur.endsWith(";")) cur += "; ";
+                    state.maps[currentStatusMapIndex].status = cur ? cur + build : build;
+                }
+                renderAll();
+            }
+            statusBuilderModal.close();
+        }
+        function renderAll() {
+            switchModeSel.value = state.switching_mode;
+            cycleKeyInput.value = state.switch_key || "=";
+            layoutNameInput.value = state.layout_name || "layout";
+            addMapBtn.disabled = state.switching_mode === 'hold' && state.maps.length >= 2;
+            const area = document.getElementById('editor-area'); area.innerHTML = '';
+            state.maps.forEach((m, idx) => {
+                let col = document.createElement('div'); col.className = 'map-col';
+                if (cloningSource && cloningSource.idx === idx) {
+                    let b = document.createElement('div'); b.className = 'cloning-active-badge'; b.innerText = 'SOURCE'; col.appendChild(b);
+                }
+                let header = `<div class="map-header">
+                    <div class="map-title-row">
+                        <div class="map-id-input-group"><span class="dot"></span><input type="text" class="map-id-input" value="${m.id}" onchange="updateMapID(${idx}, this.value)"></div>
+                        <div class="reorder-btns">
+                            <button ${idx === 0 ? 'disabled' : ''} onclick="moveMap(${idx},-1)" title="Move Left">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            <button ${idx === state.maps.length - 1 ? 'disabled' : ''} onclick="moveMap(${idx},1)" title="Move Right">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                            <button class="del-map-btn" onclick="removeMap(${idx})" title="Delete Map">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Status (Press)</label>
+                        <div class="status-row">
+                            <input type="text" value="${m.status}" onchange="state.maps[${idx}].status=this.value">
+                            <button class="btn" onclick="currentStatusMapIndex=${idx}; statusBuilderModal.showModal()">Presets</button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Status (Release)</label>
+                        <div class="status-row">
+                            <input type="text" value="${m.status_release || ''}" onchange="state.maps[${idx}].status_release=this.value">
+                        </div>
+                    </div>
+                </div>`;
+                let list = document.createElement('div'); list.className = 'keybinds-list';
+                Object.keys(m.keys).forEach(k => {
+                    const c = m.keys[k]; if (c._showAdvanced === undefined) c._showAdvanced = !!(c.press_switch_to_map || c.release_switch_to_map);
+                    const isKeyInvalid = /[^a-zA-Z0-9]/.test(k);
+                    const isAliasInvalid = !c.alias || /[^a-zA-Z0-9]/.test(c.alias);
+                    const markRed = isKeyInvalid && isAliasInvalid;
+                    let card = document.createElement('div'); card.className = 'key-card';
+                    card.innerHTML = `<div class="key-card-header">
+                        <div class="key-fields-group">
+                            <div class="key-name-group" style="flex: 1; min-width: 0;">
+                                <label>Key</label>
+                                <input type="text" value="${k}" onchange="updateKeyName(${idx},'${k}',this.value)" style="width: 100%; box-sizing: border-box;">
+                            </div>
+                            <div class="key-name-group" style="flex: 1; min-width: 0;">
+                                <label>Alias (Safe Name)</label>
+                                <input type="text" class="alias-input ${markRed ? 'invalid' : ''}" value="${c.alias}" onchange="updateAliasName(${idx},'${k}',this.value)" style="width: 100%; box-sizing: border-box;">
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="action-btn clone-btn" onclick="startClone(${idx},'${k}')" title="Clone to Map">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="removeKey(${idx},'${k}')" title="Remove Key">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="key-action-grid">
+                        <div class="action-row"><label>Press</label><input type="text" value="${c.press}" onchange="state.maps[${idx}].keys['${k}'].press=this.value"></div>
+                        <div class="action-row"><label>Release</label><input type="text" value="${c.release}" onchange="state.maps[${idx}].keys['${k}'].release=this.value"></div>
+                        ${state.switching_mode === 'cycle' ? `<div class="action-row"><label class="custom-checkbox"><input type="checkbox" ${c._showAdvanced ? 'checked' : ''} onchange="toggleAdvanced(${idx},'${k}',this.checked)"><span class="checkmark"></span> Switch Map</label></div>${c._showAdvanced ? `<div class="action-row"><label>Press SW</label><select onchange="state.maps[${idx}].keys['${k}'].press_switch_to_map=this.value">${getMapOps(c.press_switch_to_map)}</select></div><div class="action-row"><label>Rel SW</label><select onchange="state.maps[${idx}].keys['${k}'].release_switch_to_map=this.value">${getMapOps(c.release_switch_to_map)}</select></div>` : ''}` : ''}
+                    </div>`;
+                    list.appendChild(card);
+                });
+                let btn = document.createElement('button'); btn.className = 'add-key-btn' + (cloningSource ? ' cloning-target' : '');
+                btn.innerText = cloningSource ? 'Paste Cloned' : '+ Add Keybind'; btn.onclick = () => addKey(idx);
+                list.appendChild(btn); col.innerHTML = header; col.appendChild(list); area.appendChild(col);
+            });
+        }
+        function generateCS2() {
+            const ln = (state.layout_name || 'layout').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+            let o = ["// ###############################\n// #       Multimap Switch       #\n// ###############################\n"];
+            const bk = (state.switch_key || cycleKeyInput.value.trim() || "=");
+            if (state.switching_mode === 'cycle') {
+                o.push(`bind "${bk}" "+mm_${ln}_index"\nalias "+mm_${ln}_index" "mm_${ln}_index_1"\nalias "-mm_${ln}_index" ""`);
+                state.maps.forEach((m, i) => o.push(`alias "mm_${ln}_index_${i}" "alias +mm_${ln}_index mm_${ln}_index_${(i + 1) % state.maps.length}; mm_${ln}_${i}"`));
+            } else { o.push(`bind "${bk}" "+mm_${ln}_hold"\nalias "+mm_${ln}_hold" "mm_${ln}_1"\nalias "-mm_${ln}_hold" "mm_${ln}_0"`); }
+            o.push("");
+
+            let ks = new Set(); state.maps.forEach(m => Object.keys(m.keys).forEach(k => ks.add(k))); let uk = Array.from(ks);
+
+            // Pre-calculate alias map for consistency
+            let aliasMap = {};
+            uk.forEach(k => {
+                let a = k;
+                for (let map of state.maps) if (map.keys[k]) { a = map.keys[k].alias || k; break; }
+                aliasMap[k] = a;
+            });
+
+            state.maps.forEach((m, i) => {
+                let cmd = `alias "mm_${ln}_${i}" "alias -mm_${ln}_index mm_${ln}_status_${i}_release; mm_${ln}_status_${i}`;
+                uk.forEach(k => cmd += `; mm_${ln}_key_${aliasMap[k]}_${i}`);
+                o.push(cmd + '"');
+            });
+            o.push("");
+            state.maps.forEach((m, i) => o.push(`alias "mm_${ln}_status_${i}" "${m.status || ''}"`));
+            o.push("");
+            state.maps.forEach((m, i) => o.push(`alias "mm_${ln}_status_${i}_release" "${m.status_release || ''}"`));
+            o.push("");
+            if (uk.length) {
+                uk.forEach(k => {
+                    let a = aliasMap[k];
+                    o.push(`bind "${k}" "+mm_${ln}_key_${a}_exec_0"`);
+                });
+                o.push("");
+                uk.forEach(k => {
+                    let a = aliasMap[k];
+                    state.maps.forEach((m, i) => o.push(`alias "mm_${ln}_key_${a}_${i}" "bind \"${k}\" \"+mm_${ln}_key_${a}_exec_${i}\""`));
+                    o.push("");
+                });
+                state.maps.forEach((m, i) => {
+                    o.push(`// ==== MAP: ${m.id} ====`);
+                    uk.forEach(k => {
+                        let a = aliasMap[k];
+                        let c = m.keys[k];
+                        if (!c) o.push(`alias "+mm_${ln}_key_${a}_exec_${i}" ""\nalias "-mm_${ln}_key_${a}_exec_${i}" ""`);
+                        else {
+                            let p = c.press || "", r = c.release || "";
+                            if (state.switching_mode === 'cycle') {
+                                if (c.press_switch_to_map) { let t = state.maps.findIndex(x => x.id === c.press_switch_to_map); if (t >= 0) p += (p ? "; " : "") + `mm_${ln}_index_${t}; mm_${ln}_status_${t}_release`; }
+                                if (c.release_switch_to_map) { let t = state.maps.findIndex(x => x.id === c.release_switch_to_map); if (t >= 0) r += (r ? "; " : "") + `mm_${ln}_index_${t}; mm_${ln}_status_${t}_release`; }
+                            }
+                            o.push(`alias "+mm_${ln}_key_${a}_exec_${i}" "${p}"\nalias "-mm_${ln}_key_${a}_exec_${i}" "${r}"`);
+                        }
+                    });
+                    o.push("");
+                });
+            }
+            o.push("// ###############################\n// #     Multimap Switch End     #\n// ###############################\n");
+            return o.join("\n");
+        }
+        renderAll();
+    </script>
+</body>
+
+</html>
