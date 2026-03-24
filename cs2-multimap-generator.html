@@ -370,6 +370,8 @@
             padding: 6px 10px;
             border-radius: 4px;
             flex-shrink: 0;
+            height: 32px;
+            box-sizing: border-box;
         }
 
         input.alias-input.invalid {
@@ -382,6 +384,9 @@
             display: flex;
             gap: 4px;
             flex-shrink: 0;
+            align-items: center;
+            height: 32px;
+            box-sizing: border-box;
         }
 
         .action-btn {
@@ -677,6 +682,31 @@
         .instruction-box strong {
             color: #fff;
         }
+
+        .reorder-key-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-right: 4px;
+        }
+
+        .reorder-key-btns .action-btn {
+            padding: 2px;
+            width: 20px;
+            height: 20px;
+        }
+
+        .reorder-key-btns .action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            height: 32px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 
@@ -688,9 +718,14 @@
                 oninput="state.layout_name = this.value.trim() || 'layout'">
         </div>
         <div class="controls-group">
-            <label>Switch Key</label>
-            <input type="text" id="cycleKeyInput" value="=" style="width: 80px; text-align: center;"
-                oninput="state.switch_key = this.value.trim() || '='">
+            <label>Key Next</label>
+            <input type="text" id="cycleKeyNextInput" value="=" style="width: 80px; text-align: center;"
+                oninput="state.switch_key_next = this.value.trim() || '='">
+        </div>
+        <div class="controls-group" id="prevKeyGroup">
+            <label>Key Previous</label>
+            <input type="text" id="cycleKeyPrevInput" value="" style="width: 80px; text-align: center;"
+                oninput="state.switch_key_prev = this.value.trim() || ''">
         </div>
         <div class="controls-group">
             <label>Mode</label>
@@ -852,12 +887,13 @@
     <div id="toast" class="copy-toast">Copied!</div>
 
     <script>
-        let state = { layout_name: "layout", switching_mode: "cycle", switch_key: "=", maps: [{ id: "map0", status: "", status_release: "", keys: {} }] };
+        let state = { layout_name: "layout", switching_mode: "cycle", switch_key_next: "=", switch_key_prev: "", maps: [{ id: "map0", status: "", status_release: "", keys: {}, key_order: [] }] };
         let cloningSource = null;
 
         function newConfig() {
-            state = { layout_name: "layout", switching_mode: "cycle", switch_key: "=", maps: [{ id: "map0", status: "", status_release: "", keys: {} }] };
-            document.getElementById('cycleKeyInput').value = "=";
+            state = { layout_name: "layout", switching_mode: "cycle", switch_key_next: "=", switch_key_prev: "", maps: [{ id: "map0", status: "", status_release: "", keys: {}, key_order: [] }] };
+            document.getElementById('cycleKeyNextInput').value = "=";
+            document.getElementById('cycleKeyPrevInput').value = "";
             document.getElementById('layoutNameInput').value = "layout";
             renderAll();
         }
@@ -869,9 +905,14 @@
                 try {
                     const imported = JSON.parse(evt.target.result);
                     if (imported.switching_mode && imported.maps) {
-                        imported.maps.forEach(m => { for (let k in m.keys) if (!m.keys[k].alias) m.keys[k].alias = k; });
+                        imported.maps.forEach(m => {
+                            if (!m.key_order) m.key_order = Object.keys(m.keys);
+                            for (let k in m.keys) if (!m.keys[k].alias) m.keys[k].alias = k;
+                        });
                         state = imported;
-                        document.getElementById('cycleKeyInput').value = state.switch_key || "=";
+                        if (state.switch_key && !state.switch_key_next) state.switch_key_next = state.switch_key;
+                        document.getElementById('cycleKeyNextInput').value = state.switch_key_next || "=";
+                        document.getElementById('cycleKeyPrevInput').value = state.switch_key_prev || "";
                         document.getElementById('layoutNameInput').value = state.layout_name || "layout";
                         renderAll();
                     }
@@ -935,12 +976,19 @@
             if (state.switching_mode === 'hold' && state.maps.length >= 2) return;
             let id = `map${state.maps.length}`;
             while (state.maps.some(m => m.id === id)) id += "_new";
-            state.maps.push({ id, status: "", status_release: "", keys: {} });
+            state.maps.push({ id, status: "", status_release: "", keys: {}, key_order: [] });
             renderAll();
         }
         function removeMap(idx) { if (state.maps.length > 1) { state.maps.splice(idx, 1); renderAll(); } }
         function moveMap(idx, dir) {
             if (idx + dir >= 0 && idx + dir < state.maps.length) { [state.maps[idx], state.maps[idx + dir]] = [state.maps[idx + dir], state.maps[idx]]; renderAll(); }
+        }
+        function moveKey(mapIdx, keyIdx, dir) {
+            const m = state.maps[mapIdx];
+            if (keyIdx + dir >= 0 && keyIdx + dir < m.key_order.length) {
+                [m.key_order[keyIdx], m.key_order[keyIdx + dir]] = [m.key_order[keyIdx + dir], m.key_order[keyIdx]];
+                renderAll();
+            }
         }
         function updateMapID(idx, newId) {
             newId = newId.trim(); if (!newId) return renderAll();
@@ -960,13 +1008,24 @@
                 let k = cloningSource.key;
                 if (state.maps[idx].keys[k]) { let i = 1; while (state.maps[idx].keys[k + '_' + i]) i++; k += '_' + i; }
                 state.maps[idx].keys[k] = JSON.parse(JSON.stringify(src));
+                if (!state.maps[idx].key_order) state.maps[idx].key_order = [];
+                state.maps[idx].key_order.push(k);
                 cloningSource = null; renderAll(); return;
             }
             let k = "new_bind", i = 1; while (state.maps[idx].keys[k]) { k = "new_bind_" + i; i++; }
             state.maps[idx].keys[k] = { alias: k, press: "", release: "", press_switch_to_map: "", release_switch_to_map: "" };
+            if (!state.maps[idx].key_order) state.maps[idx].key_order = [];
+            state.maps[idx].key_order.push(k);
             renderAll();
         }
-        function removeKey(idx, k) { delete state.maps[idx].keys[k]; renderAll(); }
+        function removeKey(idx, k) {
+            delete state.maps[idx].keys[k];
+            if (state.maps[idx].key_order) {
+                const i = state.maps[idx].key_order.indexOf(k);
+                if (i > -1) state.maps[idx].key_order.splice(i, 1);
+            }
+            renderAll();
+        }
         function updateKeyName(idx, old, val) {
             val = val.trim().toLowerCase(); if (!val || val === old) return;
             state.maps.forEach(m => {
@@ -974,6 +1033,10 @@
                     const cfg = m.keys[old]; if (cfg.alias === old) cfg.alias = val;
                     const next = {}; for (let k in m.keys) next[k === old ? val : k] = m.keys[k];
                     m.keys = next;
+                    if (m.key_order) {
+                        const i = m.key_order.indexOf(old);
+                        if (i > -1) m.key_order[i] = val;
+                    }
                 }
             });
             renderAll();
@@ -1033,7 +1096,9 @@
         }
         function renderAll() {
             switchModeSel.value = state.switching_mode;
-            cycleKeyInput.value = state.switch_key || "=";
+            cycleKeyNextInput.value = state.switch_key_next || "=";
+            cycleKeyPrevInput.value = state.switch_key_prev || "";
+            document.getElementById('prevKeyGroup').style.display = state.switching_mode === 'cycle' ? 'block' : 'none';
             layoutNameInput.value = state.layout_name || "layout";
             addMapBtn.disabled = state.switching_mode === 'hold' && state.maps.length >= 2;
             const area = document.getElementById('editor-area'); area.innerHTML = '';
@@ -1072,8 +1137,10 @@
                     </div>
                 </div>`;
                 let list = document.createElement('div'); list.className = 'keybinds-list';
-                Object.keys(m.keys).forEach(k => {
-                    const c = m.keys[k]; if (c._showAdvanced === undefined) c._showAdvanced = !!(c.press_switch_to_map || c.release_switch_to_map);
+                if (!m.key_order) m.key_order = Object.keys(m.keys);
+                m.key_order.forEach((k, kIdx) => {
+                    const c = m.keys[k]; if (!c) return;
+                    if (c._showAdvanced === undefined) c._showAdvanced = !!(c.press_switch_to_map || c.release_switch_to_map);
                     const isKeyInvalid = /[^a-zA-Z0-9]/.test(k);
                     const isAliasInvalid = !c.alias || /[^a-zA-Z0-9]/.test(c.alias);
                     const markRed = isKeyInvalid && isAliasInvalid;
@@ -1090,6 +1157,14 @@
                             </div>
                         </div>
                         <div class="header-actions">
+                            <div class="reorder-key-btns">
+                                <button class="action-btn" onclick="moveKey(${idx},${kIdx},-1)" title="Move Up" ${kIdx === 0 ? 'disabled' : ''}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                </button>
+                                <button class="action-btn" onclick="moveKey(${idx},${kIdx},1)" title="Move Down" ${kIdx === m.key_order.length - 1 ? 'disabled' : ''}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </button>
+                            </div>
                             <button class="action-btn clone-btn" onclick="startClone(${idx},'${k}')" title="Clone to Map">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             </button>
@@ -1113,11 +1188,24 @@
         function generateCS2() {
             const ln = (state.layout_name || 'layout').toLowerCase().replace(/[^a-z0-9_]/g, '_');
             let o = ["// ###############################\n// #       Multimap Switch       #\n// ###############################\n"];
-            const bk = (state.switch_key || cycleKeyInput.value.trim() || "=");
+            const bNext = (state.switch_key_next || cycleKeyNextInput.value.trim() || "=");
+            const bPrev = (state.switch_key_prev || cycleKeyPrevInput.value.trim() || "");
+
             if (state.switching_mode === 'cycle') {
-                o.push(`bind "${bk}" "+mm_${ln}_index"\nalias "+mm_${ln}_index" "mm_${ln}_index_1"\nalias "-mm_${ln}_index" ""`);
-                state.maps.forEach((m, i) => o.push(`alias "mm_${ln}_index_${i}" "alias +mm_${ln}_index mm_${ln}_index_${(i + 1) % state.maps.length}; mm_${ln}_${i}"`));
-            } else { o.push(`bind "${bk}" "+mm_${ln}_hold"\nalias "+mm_${ln}_hold" "mm_${ln}_1"\nalias "-mm_${ln}_hold" "mm_${ln}_0"`); }
+                o.push(`bind "${bNext}" "+mm_${ln}_index"\nalias "+mm_${ln}_index" "mm_${ln}_index_1"\nalias "-mm_${ln}_index" ""`);
+                if (bPrev) {
+                    o.push(`bind "${bPrev}" "+mm_${ln}_index_prev"\nalias "+mm_${ln}_index_prev" "mm_${ln}_index_${state.maps.length - 1}_prev"\nalias "-mm_${ln}_index_prev" ""`);
+                }
+                state.maps.forEach((m, i) => {
+                    const next = (i + 1) % state.maps.length;
+                    const prev = (i - 1 + state.maps.length) % state.maps.length;
+                    const cmd = `alias +mm_${ln}_index mm_${ln}_index_${next}; alias +mm_${ln}_index_prev mm_${ln}_index_${prev}_prev; mm_${ln}_${i}`;
+                    o.push(`alias "mm_${ln}_index_${i}" "${cmd}"`);
+                    if (bPrev) o.push(`alias "mm_${ln}_index_${i}_prev" "${cmd}"`);
+                });
+            } else {
+                o.push(`bind "${bNext}" "+mm_${ln}_hold"\nalias "+mm_${ln}_hold" "mm_${ln}_1"\nalias "-mm_${ln}_hold" "mm_${ln}_0"`);
+            }
             o.push("");
 
             let ks = new Set(); state.maps.forEach(m => Object.keys(m.keys).forEach(k => ks.add(k))); let uk = Array.from(ks);
@@ -1131,7 +1219,7 @@
             });
 
             state.maps.forEach((m, i) => {
-                let cmd = `alias "mm_${ln}_${i}" "alias -mm_${ln}_index mm_${ln}_status_${i}_release; mm_${ln}_status_${i}`;
+                let cmd = `alias "mm_${ln}_${i}" "alias -mm_${ln}_index mm_${ln}_status_${i}_release; alias -mm_${ln}_index_prev mm_${ln}_status_${i}_release; mm_${ln}_status_${i}`;
                 uk.forEach(k => cmd += `; mm_${ln}_key_${aliasMap[k]}_${i}`);
                 o.push(cmd + '"');
             });
