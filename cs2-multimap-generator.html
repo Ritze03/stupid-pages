@@ -872,7 +872,7 @@
             </div>
 
             <div id="dlMsg" class="instruction-box" style="display: none;">
-                Generated <strong>multimap.cfg</strong>. Put <code>exec multimap.cfg</code> in your
+                Generated file. Put <code>exec &lt;filename&gt;</code> in your
                 <code>autoexec.cfg</code>.
             </div>
 
@@ -880,7 +880,7 @@
 
             <div class="modal-footer">
                 <button class="btn" onclick="document.getElementById('exportModal').close()">Close</button>
-                <button class="btn primary" onclick="downloadCS2File()">Download multimap.cfg</button>
+                <button class="btn primary" id="downloadBtn" onclick="downloadCS2File()">Download .cfg</button>
             </div>
         </div>
     </dialog>
@@ -925,7 +925,8 @@
             let cloned = JSON.parse(JSON.stringify(state));
             cloned.maps.forEach(m => Object.values(m.keys).forEach(k => delete k._showAdvanced));
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cloned, null, 2));
-            const a = document.createElement('a'); a.href = dataStr; a.download = "multimap.json"; a.click();
+            const ln = (state.layout_name || 'layout').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+            const a = document.createElement('a'); a.href = dataStr; a.download = `multimap-${ln}.json`; a.click();
         }
         function openExportModal() { document.getElementById('saveReminderModal').showModal(); }
         function proceedToExport(saveJson) {
@@ -964,8 +965,13 @@
             });
         }
         function downloadCS2File() {
+            const ln = (state.layout_name || 'layout').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+            const filename = `multimap-${ln}.cfg`;
             const a = document.createElement('a'); a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(generateCS2());
-            a.download = "multimap.cfg"; a.click(); document.getElementById('dlMsg').style.display = 'block';
+            a.download = filename; a.click();
+            const msg = document.getElementById('dlMsg');
+            msg.innerHTML = `Generated <strong>${filename}</strong>. Put <code>exec ${filename}</code> in your <code>autoexec.cfg</code>.`;
+            msg.style.display = 'block';
         }
         function setSwitchingMode(mode) {
             state.switching_mode = mode;
