@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2 Alias Cycle Generator | Premium Tool</title>
+    <meta name="description" content="Generate sequential alias cycles for CS2 with a sleek, modern, and high-performance interface.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Pro Dark Theme Palette */
+            --bg-body: #0A0B0F;
+            --bg-card: #181B21;
+            --bg-card-secondary: #1E2129;
+            --accent-primary: #3B82F6; /* Electric Blue */
+            --accent-success: #10B981; /* Emerald */
+            --accent-danger: #EF4444; /* Vivid Red */
+            --text-main: #F3F4F6;
+            --text-muted: #9CA3AF;
+            --border: rgba(255, 255, 255, 0.05);
+            --glass-blur: blur(4px);
+            --transition: all 0.2s ease-in-out;
+            --shadow-heavy: 0 10px 20px rgba(0,0,0,0.3);
+            --rounding-container: 12px;
+            --rounding-element: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.01em;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 850px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--rounding-container);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: var(--shadow-heavy);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input, textarea {
+            background: #0d0e12;
+            border: 1px solid var(--border);
+            border-radius: var(--rounding-element);
+            padding: 0.875rem;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--accent-primary);
+            background: #12141a;
+        }
+
+        textarea {
+            height: 350px;
+            resize: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .output-container {
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        #output {
+            background: #050507;
+            border-radius: var(--rounding-element);
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #d1d5db;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            flex-grow: 1;
+            border: 1px solid var(--border);
+            line-height: 1.6;
+        }
+
+        .copy-btn {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: var(--rounding-element);
+            padding: 0.75rem 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .copy-btn:hover {
+            background: #2563eb;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn.success {
+            background: var(--accent-success);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Alias Cycle Generator</h1>
+            <p class="subtitle">Quickly create sequential command loops for your CS2 configs.</p>
+        </header>
+
+        <div class="grid">
+            <!-- Inputs Section -->
+            <div class="card">
+                <div class="input-group">
+                    <label for="baseName">Base Alias Name</label>
+                    <input type="text" id="baseName" placeholder="e.g. viewmodel_switcher">
+                </div>
+
+                <div class="input-group">
+                    <label for="commands">Commands (One per line)</label>
+                    <textarea id="commands" placeholder="Enter commands line by line..."></textarea>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="card">
+                <div class="output-container">
+                    <label>Generated Result</label>
+                    <div id="output">// Configuration will appear here...</div>
+                    <button class="copy-btn" id="copyBtn">Copy Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseNameInput = document.getElementById('baseName');
+        const commandsInput = document.getElementById('commands');
+        const outputArea = document.getElementById('output');
+        const copyBtn = document.getElementById('copyBtn');
+
+        function generateAliases() {
+            const baseName = baseNameInput.value.trim();
+            const rawCommands = commandsInput.value.split('\n').filter(line => line.trim() !== '');
+            
+            if (!baseName || rawCommands.length === 0) {
+                outputArea.textContent = '// Please enter a base name and at least one command...';
+                return;
+            }
+
+            let result = `alias "${baseName}" "${baseName}_0"\n`;
+
+            rawCommands.forEach((cmd, index) => {
+                const nextIndex = (index + 1) % rawCommands.length;
+                result += `alias "${baseName}_${index}" "${cmd.trim()}; alias ${baseName} ${baseName}_${nextIndex}"\n`;
+            });
+
+            outputArea.textContent = result;
+        }
+
+        // Listen for changes
+        baseNameInput.addEventListener('input', generateAliases);
+        commandsInput.addEventListener('input', generateAliases);
+
+        // Copy functionality
+        copyBtn.addEventListener('click', async () => {
+            const text = outputArea.textContent;
+            if (text.startsWith('//')) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied Successfully!';
+                copyBtn.classList.add('success');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('success');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        });
+    </script>
+</body>
+</html>
